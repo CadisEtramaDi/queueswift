@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS businesses (
     open_time TIME DEFAULT '08:00:00',
     close_time TIME DEFAULT '17:00:00',
     avg_service_minutes INT DEFAULT 15,
-    max_queue INT DEFAULT 50,
+    max_queue INT DEFAULT 50,z
     is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
