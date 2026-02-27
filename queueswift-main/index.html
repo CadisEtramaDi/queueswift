@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QueueSwift — Skip the Line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --border: #2a2a3d;
+    --accent: #6c63ff;
+    --accent2: #ff6b6b;
+    --accent3: #43e97b;
+    --text: #e8e8f0;
+    --muted: #8888aa;
+    --office: #4facfe;
+    --salon: #f093fb;
+    --pet: #43e97b;
+    --clinic: #fa709a;
+    --radius: 16px;
+    --transition: .3s cubic-bezier(.4,0,.2,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NOISE TEXTURE */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 2.5rem;
+    background: rgba(10,10,15,.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-decoration: none;
+  }
+  .logo span { color: var(--accent2); -webkit-text-fill-color: var(--accent2); }
+  .nav-links { display: flex; gap: 1rem; align-items: center; }
+  .nav-links a {
+    color: var(--muted); text-decoration: none; font-size: .9rem;
+    padding: .5rem 1rem; border-radius: 8px;
+    transition: var(--transition);
+  }
+  .nav-links a:hover { color: var(--text); background: var(--surface); }
+  .btn-check {
+    background: var(--accent);
+    color: #fff; border: none; border-radius: 10px;
+    padding: .6rem 1.4rem; font-size: .9rem; font-weight: 500;
+    cursor: pointer; transition: var(--transition); text-decoration: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-check:hover { background: #5650d4; transform: translateY(-1px); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 6rem 1.5rem 4rem;
+    position: relative;
+  }
+  .hero-glow {
+    position: absolute; top: 20%; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 400px;
+    background: radial-gradient(ellipse, rgba(108,99,255,.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: rgba(108,99,255,.12); border: 1px solid rgba(108,99,255,.3);
+    border-radius: 100px; padding: .4rem 1.2rem;
+    font-size: .8rem; color: #a78bfa; margin-bottom: 2rem;
+    animation: fadeUp .8s ease both;
+  }
+  .hero-badge::before { content: '⚡'; }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -.02em;
+    margin-bottom: 1.5rem;
+    animation: fadeUp .8s .1s ease both;
+  }
+  h1 .grad {
+    background: linear-gradient(135deg, #6c63ff 0%, #f093fb 50%, #43e97b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 1.15rem; color: var(--muted); max-width: 560px;
+    line-height: 1.7; margin-bottom: 3rem;
+    animation: fadeUp .8s .2s ease both;
+  }
+  .hero-cta {
+    display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+    animation: fadeUp .8s .3s ease both;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    color: #fff; border: none; border-radius: 12px;
+    padding: .9rem 2.2rem; font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: var(--transition);
+    font-family: 'DM Sans', sans-serif; text-decoration: none;
+    box-shadow: 0 0 30px rgba(108,99,255,.4);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(108,99,255,.6); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text); border: 1px solid var(--border); border-radius: 12px;
+    padding: .9rem 2.2rem; font-size: 1rem; font-weight: 500;
+    cursor: pointer; transition: var(--transition);
+    font-family: 'DM Sans', sans-serif; text-decoration: none;
+  }
+  .btn-secondary:hover { background: var(--surface); border-color: var(--accent); }
+
+  /* STATS */
+  .stats {
+    display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap;
+    padding: 2rem; margin-top: 4rem;
+    animation: fadeUp .8s .4s ease both;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat-label { font-size: .8rem; color: var(--muted); margin-top: .3rem; }
+
+  /* SECTION */
+  section { padding: 5rem 1.5rem; position: relative; }
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+  .section-tag {
+    display: inline-block;
+    font-size: .75rem; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800; margin-bottom: 1rem;
+  }
+  .section-sub { color: var(--muted); max-width: 500px; line-height: 1.7; margin-bottom: 3rem; }
+
+  /* CATEGORIES */
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 3rem;
+  }
+  .cat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.8rem 1.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+  .cat-card::before {
+    content: '';
+    position: absolute; bottom: -20px; right: -20px;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    opacity: .08;
+    transition: var(--transition);
+  }
+  .cat-card:hover::before { transform: scale(2.5); }
+  .cat-card.active { border-color: var(--cat-color); }
+  .cat-card.active .cat-icon-wrap { background: rgba(var(--cat-rgb), .15); }
+  .cat-card[data-cat="office"] { --cat-color: var(--office); --cat-rgb: 79,172,254; }
+  .cat-card[data-cat="office"]::before { background: var(--office); }
+  .cat-card[data-cat="salon"] { --cat-color: var(--salon); --cat-rgb: 240,147,251; }
+  .cat-card[data-cat="salon"]::before { background: var(--salon); }
+  .cat-card[data-cat="pet_grooming"] { --cat-color: var(--pet); --cat-rgb: 67,233,123; }
+  .cat-card[data-cat="pet_grooming"]::before { background: var(--pet); }
+  .cat-card[data-cat="clinic"] { --cat-color: var(--clinic); --cat-rgb: 250,112,154; }
+  .cat-card[data-cat="clinic"]::before { background: var(--clinic); }
+  .cat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,.3); border-color: var(--cat-color); }
+  .cat-icon-wrap {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; margin-bottom: 1.2rem;
+    transition: var(--transition);
+  }
+  .cat-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 1rem; margin-bottom: .4rem;
+    color: var(--cat-color);
+  }
+  .cat-desc { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+
+  /* BUSINESSES LIST */
+  .businesses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.2rem;
+  }
+  .biz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    transition: var(--transition);
+    cursor: pointer;
+    animation: fadeUp .4s ease both;
+  }
+  .biz-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 6px 25px rgba(108,99,255,.15); }
+  .biz-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+  .biz-icon { font-size: 1.8rem; margin-right: 1rem; }
+  .biz-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: .25rem; }
+  .biz-addr { font-size: .8rem; color: var(--muted); }
+  .queue-badge {
+    display: flex; align-items: center; gap: .4rem;
+    background: var(--surface2); border-radius: 20px;
+    padding: .35rem .8rem; font-size: .78rem; white-space: nowrap;
+  }
+  .queue-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent3); animation: pulse 2s infinite; }
+  .biz-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1.2rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+  .biz-wait { font-size: .8rem; color: var(--muted); }
+  .biz-wait strong { color: var(--text); }
+  .btn-join {
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    color: #fff; border: none; border-radius: 8px;
+    padding: .5rem 1.2rem; font-size: .85rem; font-weight: 600;
+    cursor: pointer; transition: var(--transition);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-join:hover { transform: scale(1.05); }
+  .empty-state { text-align: center; padding: 4rem; color: var(--muted); grid-column: 1/-1; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(5,5,10,.85);
+    backdrop-filter: blur(10px);
+    z-index: 200;
+    display: none; align-items: center; justify-content: center;
+    padding: 1.5rem;
+  }
+  .modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 2.5rem;
+    width: 100%; max-width: 500px;
+    max-height: 90vh; overflow-y: auto;
+    position: relative;
+    animation: slideUp .3s ease;
+  }
+  .modal-close {
+    position: absolute; top: 1.2rem; right: 1.2rem;
+    background: var(--surface2); border: none; border-radius: 8px;
+    width: 36px; height: 36px; font-size: 1.1rem; cursor: pointer;
+    color: var(--muted); display: flex; align-items: center; justify-content: center;
+    transition: var(--transition);
+  }
+  .modal-close:hover { background: var(--border); color: var(--text); }
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem; font-weight: 800; margin-bottom: .5rem;
+  }
+  .modal-sub { color: var(--muted); font-size: .9rem; margin-bottom: 2rem; }
+
+  .form-group { margin-bottom: 1.2rem; }
+  label { display: block; font-size: .82rem; font-weight: 500; margin-bottom: .5rem; color: var(--muted); }
+  input, select, textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    color: var(--text);
+    font-size: .95rem;
+    font-family: 'DM Sans', sans-serif;
+    transition: var(--transition);
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,99,255,.1); }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 80px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .btn-full {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    color: #fff; border: none; border-radius: 12px;
+    padding: 1rem; font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: var(--transition);
+    font-family: 'DM Sans', sans-serif;
+    margin-top: .5rem;
+  }
+  .btn-full:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,99,255,.4); }
+  .btn-full:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* SUCCESS STATE */
+  .success-card {
+    text-align: center; padding: 1rem 0;
+  }
+  .token-display {
+    background: linear-gradient(135deg, rgba(108,99,255,.15), rgba(139,92,246,.1));
+    border: 1px solid rgba(108,99,255,.3);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+  }
+  .token-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: .5rem; }
+  .token-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem; font-weight: 800;
+    letter-spacing: .2em;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+  .info-box {
+    background: var(--surface2); border-radius: 12px; padding: 1rem;
+    text-align: center;
+  }
+  .info-box-num { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent3); }
+  .info-box-label { font-size: .75rem; color: var(--muted); margin-top: .25rem; }
+  .success-note { font-size: .82rem; color: var(--muted); margin-top: 1.5rem; line-height: 1.6; }
+
+  /* CHECK STATUS SECTION */
+  .check-status-wrap {
+    background: linear-gradient(135deg, rgba(108,99,255,.08), rgba(67,233,123,.05));
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 3rem;
+    text-align: center;
+    margin-top: 4rem;
+  }
+  .token-input-wrap { display: flex; gap: 1rem; max-width: 400px; margin: 2rem auto 0; }
+  .token-input-wrap input { flex: 1; text-align: center; letter-spacing: .1em; font-size: 1.1rem; font-weight: 600; text-transform: uppercase; }
+  .status-result {
+    max-width: 500px; margin: 2rem auto 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    display: none;
+  }
+  .status-result.visible { display: block; animation: fadeUp .3s ease; }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: .5rem;
+    border-radius: 20px; padding: .4rem 1rem;
+    font-size: .82rem; font-weight: 600; margin-bottom: 1.5rem;
+  }
+  .status-waiting { background: rgba(108,99,255,.15); color: #a78bfa; }
+  .status-serving { background: rgba(67,233,123,.15); color: var(--accent3); }
+  .status-done { background: rgba(79,172,254,.15); color: var(--office); }
+  .status-cancelled { background: rgba(255,107,107,.15); color: var(--accent2); }
+  .btn-cancel-queue {
+    background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.3);
+    color: var(--accent2); border-radius: 8px;
+    padding: .5rem 1.2rem; font-size: .85rem; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: var(--transition);
+    margin-top: 1rem;
+  }
+  .btn-cancel-queue:hover { background: rgba(255,107,107,.2); }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+  .feat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem 1.5rem;
+    transition: var(--transition);
+  }
+  .feat:hover { border-color: var(--accent); transform: translateY(-3px); }
+  .feat-icon { font-size: 2rem; margin-bottom: 1rem; display: block; }
+  .feat-title { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: .6rem; }
+  .feat-desc { font-size: .85rem; color: var(--muted); line-height: 1.6; }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: .85rem;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* LOADER */
+  .loader { display: flex; gap: .4rem; justify-content: center; padding: 3rem; }
+  .loader span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    animation: bounce .8s infinite;
+  }
+  .loader span:nth-child(2) { animation-delay: .1s; }
+  .loader span:nth-child(3) { animation-delay: .2s; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    font-size: .9rem;
+    z-index: 999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: .3s ease;
+    max-width: 320px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-color: var(--accent3); }
+  #toast.error { border-color: var(--accent2); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-10px); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+  /* MOBILE */
+  @media (max-width: 640px) {
+    nav { padding: 1rem 1.2rem; }
+    .nav-links .hide-mobile { display: none; }
+    h1 { font-size: 2.4rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .modal { padding: 1.5rem; }
+    .token-input-wrap { flex-direction: column; }
+    .check-status-wrap { padding: 2rem 1.2rem; }
+    .info-grid { grid-template-columns: 1fr; }
+    .stats { gap: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">Queue<span>Swift</span></a>
+  <div class="nav-links">
+    <a href="#businesses" class="hide-mobile">Find Queue</a>
+    <a href="#check" class="hide-mobile">My Status</a>
+    <a href="admin/index.html" class="hide-mobile">Admin</a>
+    <a href="#check" class="btn-check">Check Token</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Now live — No app download needed</div>
+  <h1>Skip the Wait.<br><span class="grad">Queue from Anywhere.</span></h1>
+  <p>Join business queues online, grab your spot, and get real-time updates. No physical waiting, no confusion — just smooth service.</p>
+  <div class="hero-cta">
+    <a href="#businesses" class="btn-primary">Join a Queue →</a>
+    <a href="#check" class="btn-secondary">Check My Status</a>
+  </div>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num">0s</div>
+      <div class="stat-label">Setup Time</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Queues Supported</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">Live</div>
+      <div class="stat-label">Wait Updates</div>
+    </div>
+  </div>
+</div>
+
+<!-- BUSINESSES SECTION -->
+<section id="businesses">
+  <div class="section-inner">
+    <span class="section-tag">Find a Business</span>
+    <h2 class="section-title">Choose a Category</h2>
+    <p class="section-sub">Browse by business type and join a queue in seconds.</p>
+
+    <div class="categories-grid">
+      <div class="cat-card" data-cat="all" onclick="filterCategory('all', this)">
+        <div class="cat-icon-wrap">🏢</div>
+        <div class="cat-name" style="color:var(--text)">All</div>
+        <div class="cat-desc">Show all available businesses</div>
+      </div>
+      <div class="cat-card" data-cat="office" onclick="filterCategory('office', this)">
+        <div class="cat-icon-wrap">⚖️</div>
+        <div class="cat-name">Offices</div>
+        <div class="cat-desc">Law offices, government agencies, professional services</div>
+      </div>
+      <div class="cat-card" data-cat="salon" onclick="filterCategory('salon', this)">
+        <div class="cat-icon-wrap">✂️</div>
+        <div class="cat-name">Salons</div>
+        <div class="cat-desc">Hair, nail, beauty, and wellness services</div>
+      </div>
+      <div class="cat-card" data-cat="pet_grooming" onclick="filterCategory('pet_grooming', this)">
+        <div class="cat-icon-wrap">🐾</div>
+        <div class="cat-name">Pet Grooming</div>
+        <div class="cat-desc">Professional care for your furry companions</div>
+      </div>
+      <div class="cat-card" data-cat="clinic" onclick="filterCategory('clinic', this)">
+        <div class="cat-icon-wrap">🏥</div>
+        <div class="cat-name">Clinics</div>
+        <div class="cat-desc">Medical consultations and health services</div>
+      </div>
+    </div>
+
+    <div id="businesses-list" class="businesses-grid">
+      <div class="loader"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- CHECK STATUS -->
+<section id="check">
+  <div class="section-inner">
+    <div class="check-status-wrap">
+      <span class="section-tag">Real-Time Tracking</span>
+      <h2 class="section-title" style="margin-bottom:.5rem">Check Your Queue Status</h2>
+      <p style="color:var(--muted);font-size:.95rem">Enter your 8-character token to see your current position and estimated wait time.</p>
+      <div class="token-input-wrap">
+        <input type="text" id="tokenInput" placeholder="e.g. XK7R2QBM" maxlength="8"
+          oninput="this.value=this.value.toUpperCase()" onkeypress="if(event.key==='Enter')checkStatus()">
+        <button class="btn-join" onclick="checkStatus()" style="white-space:nowrap;padding:.75rem 1.5rem">Check →</button>
+      </div>
+      <div id="statusResult" class="status-result">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="section-inner">
+    <span class="section-tag">Why QueueSwift</span>
+    <h2 class="section-title">Built for Real Businesses</h2>
+    <div class="features-grid">
+      <div class="feat">
+        <span class="feat-icon">⚡</span>
+        <div class="feat-title">Instant Queue Joining</div>
+        <div class="feat-desc">Customers join from their phone — no app, no account, no friction. Just scan or visit.</div>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">🎯</span>
+        <div class="feat-title">Live Wait Estimates</div>
+        <div class="feat-desc">Real-time position tracking and estimated wait time so customers always know what to expect.</div>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">🎫</span>
+        <div class="feat-title">Unique Token System</div>
+        <div class="feat-desc">Each customer gets a unique 8-character token to track their spot from anywhere.</div>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">🖥️</span>
+        <div class="feat-title">Staff Dashboard</div>
+        <div class="feat-desc">Simple admin panel to call the next customer, view queues, and manage daily operations.</div>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">📱</span>
+        <div class="feat-title">Mobile Responsive</div>
+        <div class="feat-desc">Fully responsive design that works beautifully on any screen size — phone, tablet, or desktop.</div>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">🛠️</span>
+        <div class="feat-title">Easy to Deploy</div>
+        <div class="feat-desc">Runs on XAMPP locally or any PHP/MySQL host. Zero dependencies, lightweight, and fast.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>QueueSwift &copy; 2025 — Built with PHP + MySQL &nbsp;|&nbsp; <a href="admin/index.html">Admin Portal</a></p>
+</footer>
+
+<!-- JOIN MODAL -->
+<div class="modal-overlay" id="joinModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modalContent">
+      <!-- Filled by JS -->
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'api/';
+let allBusinesses = [];
+let currentBiz = null;
+
+// ——— TOAST ———
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3500);
+}
+
+// ——— LOAD BUSINESSES ———
+async function loadBusinesses(category = 'all') {
+  const list = document.getElementById('businesses-list');
+  list.innerHTML = '<div class="loader"><span></span><span></span><span></span></div>';
+  try {
+    const url = category === 'all' ? `${API}businesses.php` : `${API}businesses.php?category=${category}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    allBusinesses = data;
+    renderBusinesses(data);
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state">⚠️ Could not load businesses.<br><small>Make sure XAMPP is running and the database is set up.</small></div>';
+  }
+}
+
+function getCatIcon(cat) {
+  return { office:'⚖️', salon:'✂️', pet_grooming:'🐾', clinic:'🏥' }[cat] || '🏢';
+}
+function getCatColor(cat) {
+  return { office:'var(--office)', salon:'var(--salon)', pet_grooming:'var(--pet)', clinic:'var(--clinic)' }[cat] || 'var(--accent)';
+}
+
+function renderBusinesses(data) {
+  const list = document.getElementById('businesses-list');
+  if (!data.length) {
+    list.innerHTML = '<div class="empty-state">😕 No businesses found in this category.</div>';
+    return;
+  }
+  list.innerHTML = data.map((b, i) => `
+    <div class="biz-card" onclick="openJoin(${b.id})" style="animation-delay:${i * 0.06}s">
+      <div class="biz-header">
+        <div style="display:flex;align-items:flex-start;gap:.8rem;flex:1">
+          <div class="biz-icon">${getCatIcon(b.category)}</div>
+          <div>
+            <div class="biz-name">${b.name}</div>
+            <div class="biz-addr">📍 ${b.address || 'Address not set'}</div>
+          </div>
+        </div>
+        <div class="queue-badge">
+          <div class="queue-dot"></div>
+          ${b.current_queue} waiting
+        </div>
+      </div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.5">${b.description || ''}</div>
+      <div class="biz-footer">
+        <div class="biz-wait">Est. wait: <strong>${b.current_queue * b.avg_service_minutes} min</strong></div>
+        <button class="btn-join" onclick="event.stopPropagation();openJoin(${b.id})">Join Queue</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCategory(cat, el) {
+  document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  loadBusinesses(cat);
+  document.getElementById('businesses-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ——— JOIN QUEUE MODAL ———
+async function openJoin(bizId) {
+  try {
+    const res = await fetch(`${API}businesses.php?id=${bizId}`);
+    currentBiz = await res.json();
+    if (!currentBiz) return toast('Business not found', 'error');
+
+    const services = currentBiz.services ? currentBiz.services.split('||') : [];
+    document.getElementById('modalContent').innerHTML = `
+      <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:1.5rem">
+        <span style="font-size:2rem">${getCatIcon(currentBiz.category)}</span>
+        <div>
+          <div class="modal-title">${currentBiz.name}</div>
+          <div style="color:var(--muted);font-size:.85rem">📍 ${currentBiz.address || ''}</div>
+        </div>
+      </div>
+      <div class="modal-sub">${currentBiz.description || 'Join the queue below.'}</div>
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" id="f_name" placeholder="Your full name" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="f_phone" placeholder="+63 912 345 6789">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="f_email" placeholder="you@email.com">
+        </div>
+      </div>
+      ${services.length ? `
+      <div class="form-group">
+        <label>Service *</label>
+        <select id="f_service">
+          <option value="">Select a service</option>
+          ${services.map(s => `<option value="${s}">${s}</option>`).join('')}
+        </select>
+      </div>` : ''}
+      <div class="form-group">
+        <label>Notes / Requests</label>
+        <textarea id="f_notes" placeholder="Any special requests or info..."></textarea>
+      </div>
+      <button class="btn-full" onclick="submitJoin(${bizId})">🎫 Join Queue</button>
+    `;
+    document.getElementById('joinModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  } catch(e) { toast('Error loading business', 'error'); }
+}
+
+function closeModal() {
+  document.getElementById('joinModal').classList.remove('open');
+  document.body.style.overflow = '';
+  currentBiz = null;
+}
+document.getElementById('joinModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+async function submitJoin(bizId) {
+  const name = document.getElementById('f_name')?.value.trim();
+  const phone = document.getElementById('f_phone')?.value.trim();
+  const email = document.getElementById('f_email')?.value.trim();
+  const service = document.getElementById('f_service')?.value || '';
+  const notes = document.getElementById('f_notes')?.value.trim();
+
+  if (!name) { toast('Please enter your name', 'error'); return; }
+
+  const btn = document.querySelector('.btn-full');
+  btn.disabled = true; btn.textContent = 'Joining...';
+
+  try {
+    const res = await fetch(`${API}queue.php?action=join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ business_id: bizId, customer_name: name, customer_phone: phone, customer_email: email, service_type: service, notes })
+    });
+    const data = await res.json();
+    if (data.error) { toast(data.error, 'error'); btn.disabled = false; btn.textContent = '🎫 Join Queue'; return; }
+
+    // Show success
+    document.getElementById('modalContent').innerHTML = `
+      <div class="success-card">
+        <div style="font-size:3rem;margin-bottom:1rem">🎉</div>
+        <h2 style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:.5rem">You're in the Queue!</h2>
+        <p style="color:var(--muted);font-size:.9rem">${data.business_name}</p>
+        <div class="token-display">
+          <div class="token-label">Your Queue Token</div>
+          <div class="token-val">${data.token}</div>
+          <div style="margin-top:.8rem;font-size:.8rem;color:var(--muted)">Save this token to check your status anytime</div>
+        </div>
+        <div class="info-grid">
+          <div class="info-box">
+            <div class="info-box-num">#${data.queue_number}</div>
+            <div class="info-box-label">Queue Number</div>
+          </div>
+          <div class="info-box">
+            <div class="info-box-num">${data.position}</div>
+            <div class="info-box-label">Position in Line</div>
+          </div>
+          <div class="info-box" style="grid-column:1/-1">
+            <div class="info-box-num">${data.estimated_wait} min</div>
+            <div class="info-box-label">Estimated Wait Time</div>
+          </div>
+        </div>
+        <p class="success-note">💡 You can leave and come back when it's almost your turn. Use the <strong>Check Status</strong> section with your token.</p>
+        <button class="btn-full" style="margin-top:1rem" onclick="copyToken('${data.token}')">📋 Copy Token</button>
+        <button class="btn-full" style="margin-top:.5rem;background:var(--surface2);color:var(--text)" onclick="closeModal()">Done</button>
+      </div>
+    `;
+    loadBusinesses(); // refresh queue counts
+  } catch(e) { toast('Network error. Check if server is running.', 'error'); btn.disabled = false; btn.textContent = '🎫 Join Queue'; }
+}
+
+function copyToken(token) {
+  navigator.clipboard.writeText(token).then(() => toast('Token copied to clipboard!'));
+}
+
+// ——— CHECK STATUS ———
+async function checkStatus() {
+  const token = document.getElementById('tokenInput').value.trim().toUpperCase();
+  if (token.length !== 8) { toast('Enter a valid 8-character token', 'error'); return; }
+
+  const result = document.getElementById('statusResult');
+  result.style.display = 'block';
+  result.className = 'status-result visible';
+  result.innerHTML = '<div class="loader"><span></span><span></span><span></span></div>';
+
+  try {
+    const res = await fetch(`${API}queue.php?action=status&token=${token}`);
+    const q = await res.json();
+    if (q.error) { result.innerHTML = `<p style="color:var(--accent2)">❌ ${q.error}</p>`; return; }
+
+    const statusMap = { waiting: ['status-waiting','⏳ Waiting'], serving: ['status-serving','🔔 You\'re Being Served!'], done: ['status-done','✅ Done'], cancelled: ['status-cancelled','❌ Cancelled'], no_show: ['status-cancelled','⚠️ No Show'] };
+    const [cls, label] = statusMap[q.status] || ['', q.status];
+
+    result.innerHTML = `
+      <div class="status-badge ${cls}">${label}</div>
+      <h3 style="font-family:'Syne',sans-serif;font-size:1.2rem;margin-bottom:1rem">${q.business_name}</h3>
+      <div class="info-grid" style="margin-top:0">
+        <div class="info-box">
+          <div class="info-box-num">#${q.queue_number}</div>
+          <div class="info-box-label">Queue Number</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-num" style="color:var(--accent)">${q.status === 'waiting' ? q.position : '—'}</div>
+          <div class="info-box-label">Position</div>
+        </div>
+        <div class="info-box" style="grid-column:1/-1">
+          <div class="info-box-num">${q.status === 'waiting' ? q.estimated_wait + ' min' : '—'}</div>
+          <div class="info-box-label">Estimated Wait</div>
+        </div>
+      </div>
+      ${q.currently_serving ? `<p style="margin-top:1rem;font-size:.85rem;color:var(--muted)">🔔 Now Serving: <strong>#${q.currently_serving.queue_number}</strong></p>` : ''}
+      ${q.service_type ? `<p style="margin-top:.5rem;font-size:.85rem;color:var(--muted)">Service: <strong>${q.service_type}</strong></p>` : ''}
+      ${q.status === 'waiting' ? `<button class="btn-cancel-queue" onclick="cancelQueue('${token}')">Cancel My Spot</button>` : ''}
+      <button onclick="checkStatus()" style="background:none;border:none;color:var(--accent);font-size:.85rem;cursor:pointer;margin-top:.5rem;font-family:'DM Sans',sans-serif;display:block;width:100%;text-align:center">🔄 Refresh Status</button>
+    `;
+  } catch(e) { result.innerHTML = '<p style="color:var(--accent2)">Error connecting to server</p>'; }
+}
+
+async function cancelQueue(token) {
+  if (!confirm('Cancel your queue spot?')) return;
+  const res = await fetch(`${API}queue.php?action=cancel`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  const data = await res.json();
+  if (data.success) { toast('Queue spot cancelled'); checkStatus(); }
+  else toast('Could not cancel', 'error');
+}
+
+// Init
+loadBusinesses();
+// Mark first cat as active
+document.querySelector('.cat-card[data-cat="all"]').classList.add('active');
+</script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QueueSwift — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --border: #2a2a3d;
+    --accent: #6c63ff;
+    --accent2: #ff6b6b;
+    --accent3: #43e97b;
+    --text: #e8e8f0;
+    --muted: #8888aa;
+    --radius: 14px;
+    --transition: .25s ease;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1.1rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .logo-sub { font-size: .75rem; color: var(--muted); margin-left: .5rem; -webkit-text-fill-color: var(--muted); font-weight: 400; }
+  .header-right { display: flex; gap: .8rem; align-items: center; }
+  .btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: .5rem 1rem; font-size: .85rem; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: var(--transition); text-decoration: none; }
+  .btn:hover { border-color: var(--accent); }
+  .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-accent:hover { background: #5650d4; }
+  .btn-green { background: rgba(67,233,123,.1); border-color: var(--accent3); color: var(--accent3); }
+  .btn-green:hover { background: rgba(67,233,123,.2); }
+  .btn-red { background: rgba(255,107,107,.1); border-color: var(--accent2); color: var(--accent2); font-size: .8rem; }
+  .btn-red:hover { background: rgba(255,107,107,.2); }
+
+  /* LAYOUT */
+  .layout { display: flex; flex: 1; }
+  .sidebar {
+    width: 240px; background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem;
+    flex-shrink: 0;
+  }
+  .sidebar-label { font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 1rem .5rem .5rem; }
+  .biz-item {
+    display: flex; align-items: center; gap: .7rem;
+    padding: .8rem .9rem; border-radius: 10px; cursor: pointer;
+    transition: var(--transition); margin-bottom: .2rem;
+    font-size: .88rem;
+  }
+  .biz-item:hover { background: var(--surface2); }
+  .biz-item.active { background: rgba(108,99,255,.12); color: #a78bfa; }
+  .biz-item .biz-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .main { flex: 1; padding: 2rem; overflow-y: auto; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.4rem; }
+  .stat-card-num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; }
+  .stat-card-label { font-size: .78rem; color: var(--muted); margin-top: .3rem; }
+
+  /* QUEUE BOARD */
+  .board-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: gap; gap: 1rem; }
+  .board-title { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; }
+
+  .serving-card {
+    background: linear-gradient(135deg, rgba(67,233,123,.1), rgba(108,99,255,.08));
+    border: 1px solid rgba(67,233,123,.3);
+    border-radius: var(--radius);
+    padding: 1.8rem;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1.5rem;
+  }
+  .serving-badge {
+    background: rgba(67,233,123,.15); color: var(--accent3);
+    border-radius: 20px; padding: .35rem .9rem; font-size: .78rem; font-weight: 600;
+    white-space: nowrap;
+  }
+  .serving-num { font-family: 'Syne', sans-serif; font-size: 3rem; font-weight: 800; color: var(--accent3); line-height: 1; }
+  .serving-info { flex: 1; }
+  .serving-name { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; }
+  .serving-service { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+
+  /* QUEUE TABLE */
+  .queue-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .queue-table { width: 100%; border-collapse: collapse; }
+  .queue-table th { background: var(--surface2); padding: 1rem 1.2rem; text-align: left; font-size: .78rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .queue-table td { padding: .9rem 1.2rem; border-top: 1px solid var(--border); font-size: .88rem; vertical-align: middle; }
+  .queue-table tr:hover td { background: var(--surface2); }
+  .num-badge { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: var(--surface2); font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem; }
+  .s-badge { display: inline-flex; align-items: center; gap: .35rem; border-radius: 20px; padding: .3rem .7rem; font-size: .75rem; font-weight: 600; }
+  .s-waiting { background: rgba(108,99,255,.12); color: #a78bfa; }
+  .s-serving { background: rgba(67,233,123,.12); color: var(--accent3); }
+  .s-done { background: rgba(79,172,254,.12); color: #4facfe; }
+  .s-cancelled, .s-no_show { background: rgba(255,107,107,.12); color: var(--accent2); }
+  .empty-row td { text-align: center; color: var(--muted); padding: 3rem; }
+
+  .refresh-indicator { font-size: .78rem; color: var(--muted); }
+
+  /* AUTO REFRESH */
+  .live-badge {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: rgba(67,233,123,.1); border: 1px solid rgba(67,233,123,.3);
+    border-radius: 20px; padding: .35rem .9rem; font-size: .78rem; color: var(--accent3);
+  }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent3); animation: pulse 2s infinite; }
+
+  /* DATE FILTER */
+  input[type="date"] {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: .5rem .8rem; font-family: 'DM Sans', sans-serif; font-size: .85rem;
+    outline: none;
+  }
+
+  #toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.5rem; font-size: .9rem; z-index: 999; transform: translateY(100px); opacity: 0; transition: .3s ease; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { padding: 1.2rem; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .serving-card { flex-direction: column; gap: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <span class="logo">QueueSwift</span>
+    <span class="logo-sub">Admin</span>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>Auto-refreshing</div>
+    <a href="../index.html" class="btn">← Customer View</a>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-label">Businesses</div>
+    <div id="bizList">
+      <div style="color:var(--muted);font-size:.85rem;padding:.5rem">Loading...</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="mainContent">
+      <div style="text-align:center;padding:5rem;color:var(--muted)">
+        <div style="font-size:3rem;margin-bottom:1rem">👈</div>
+        <p>Select a business from the sidebar to manage its queue</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '../api/';
+let currentBizId = null;
+let refreshTimer = null;
+
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show';
+  if(type) t.style.borderColor = type === 'error' ? 'var(--accent2)' : 'var(--accent3)';
+  setTimeout(() => t.className = '', 3000);
+}
+
+function getCatIcon(cat) {
+  return { office:'⚖️', salon:'✂️', pet_grooming:'🐾', clinic:'🏥' }[cat] || '🏢';
+}
+function getCatColor(cat) {
+  return { office:'#4facfe', salon:'#f093fb', pet_grooming:'#43e97b', clinic:'#fa709a' }[cat] || '#6c63ff';
+}
+
+async function loadSidebar() {
+  const res = await fetch(`${API}businesses.php`);
+  const data = await res.json();
+  const bl = document.getElementById('bizList');
+  bl.innerHTML = data.map(b => `
+    <div class="biz-item" onclick="selectBusiness(${b.id})" id="biz_${b.id}">
+      <div class="biz-dot" style="background:${getCatColor(b.category)}"></div>
+      <div>
+        <div style="font-weight:500;font-size:.85rem">${b.name}</div>
+        <div style="font-size:.72rem;color:var(--muted)">${b.current_queue} waiting</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function selectBusiness(id) {
+  currentBizId = id;
+  document.querySelectorAll('.biz-item').forEach(el => el.classList.remove('active'));
+  document.getElementById(`biz_${id}`)?.classList.add('active');
+  if (refreshTimer) clearInterval(refreshTimer);
+  await renderDashboard(id);
+  refreshTimer = setInterval(() => renderDashboard(id), 8000);
+}
+
+async function renderDashboard(id) {
+  try {
+    const [liveRes, queueRes, bizRes] = await Promise.all([
+      fetch(`${API}queue.php?action=live&business_id=${id}`),
+      fetch(`${API}queue.php?action=admin_queue&business_id=${id}&date=${document.getElementById('dateFilter')?.value || new Date().toISOString().split('T')[0]}`),
+      fetch(`${API}businesses.php?id=${id}`)
+    ]);
+    const live = await liveRes.json();
+    const queue = await queueRes.json();
+    const biz = await bizRes.json();
+
+    const waiting = queue.filter(q => q.status === 'waiting').length;
+    const serving = queue.filter(q => q.status === 'serving').length;
+    const done = queue.filter(q => q.status === 'done').length;
+    const cancelled = queue.filter(q => q.status === 'cancelled' || q.status === 'no_show').length;
+
+    document.getElementById('mainContent').innerHTML = `
+      <div class="board-header">
+        <div>
+          <div style="color:var(--muted);font-size:.82rem;margin-bottom:.3rem">${getCatIcon(biz.category)} ${biz.category?.replace('_',' ')}</div>
+          <div class="board-title">${biz.name}</div>
+        </div>
+        <div style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
+          <input type="date" id="dateFilter" value="${new Date().toISOString().split('T')[0]}" onchange="renderDashboard(${id})">
+          <button class="btn btn-green" onclick="callNext(${id})">🔔 Call Next</button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-card-num" style="color:#a78bfa">${waiting}</div>
+          <div class="stat-card-label">⏳ Waiting</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-num" style="color:var(--accent3)">${serving}</div>
+          <div class="stat-card-label">🔔 Being Served</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-num" style="color:#4facfe">${done}</div>
+          <div class="stat-card-label">✅ Done Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-num" style="color:var(--muted)">${cancelled}</div>
+          <div class="stat-card-label">❌ Cancelled</div>
+        </div>
+      </div>
+
+      ${live.serving ? `
+      <div class="serving-card">
+        <div>
+          <div class="serving-badge">Now Serving</div>
+          <div class="serving-num">#${live.serving.queue_number}</div>
+        </div>
+        <div class="serving-info">
+          <div class="serving-name">${live.serving.customer_name}</div>
+          <div class="serving-service">${live.serving.service_type || 'Walk-in'}</div>
+        </div>
+      </div>` : `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center;color:var(--muted);margin-bottom:1.5rem;font-size:.9rem">
+        No one is currently being served. Click <strong style="color:var(--accent3)">Call Next</strong> to start.
+      </div>`}
+
+      <div class="queue-table-wrap">
+        <table class="queue-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Customer</th>
+              <th>Service</th>
+              <th>Joined</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${queue.length ? queue.map(q => `
+              <tr>
+                <td><div class="num-badge">${q.queue_number}</div></td>
+                <td>
+                  <div style="font-weight:500">${q.customer_name}</div>
+                  <div style="font-size:.78rem;color:var(--muted)">${q.customer_phone || ''}</div>
+                </td>
+                <td style="color:var(--muted);font-size:.85rem">${q.service_type || 'Walk-in'}</td>
+                <td style="color:var(--muted);font-size:.82rem">${new Date(q.joined_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
+                <td><span class="s-badge s-${q.status}">${q.status}</span></td>
+                <td>
+                  ${q.status === 'waiting' ? `<button class="btn btn-red" onclick="markNoShow(${q.id})">No Show</button>` : ''}
+                  ${q.status === 'serving' ? `<button class="btn btn-green" onclick="markDone(${q.id})">✓ Done</button>` : ''}
+                </td>
+              </tr>
+            `).join('') : '<tr class="empty-row"><td colspan="6">No queue entries for this date</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:.8rem;text-align:right"><span class="refresh-indicator">Auto-refreshes every 8 seconds</span></div>
+    `;
+  } catch(e) {
+    document.getElementById('mainContent').innerHTML = '<div style="color:var(--accent2);padding:2rem">Error loading dashboard. Check server connection.</div>';
+  }
+}
+
+async function callNext(id) {
+  const res = await fetch(`${API}queue.php?action=admin_next`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ business_id: id })
+  });
+  const data = await res.json();
+  toast(data.message, data.success ? 'success' : 'error');
+  await renderDashboard(id);
+  loadSidebar();
+}
+
+async function markNoShow(queueId) {
+  if (!confirm('Mark as No Show?')) return;
+  await fetch(`../api/admin_update.php`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: queueId, status: 'no_show' })
+  });
+  toast('Marked as no show');
+  renderDashboard(currentBizId);
+}
+
+async function markDone(queueId) {
+  await fetch(`../api/admin_update.php`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: queueId, status: 'done' })
+  });
+  toast('Marked as done ✅', 'success');
+  renderDashboard(currentBizId);
+}
+
+loadSidebar();
+</script>
+</body>
+</html>
